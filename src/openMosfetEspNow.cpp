@@ -1,3 +1,4 @@
+#ifndef OM_ESP_NOW_HEADER_ONLY
 #include "openMosfetEspNow.h"
 #include <espnow.h>
 
@@ -53,3 +54,4 @@ void OpenMosfetEspNowClient::handleMessage(uint8_t *mac, uint8_t *incomingData, 
 		break;
 	}
 }
+#endif
