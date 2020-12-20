@@ -1,6 +1,10 @@
 #ifndef NOWINTERFACE_H
 #define NOWINTERFACE_H
 
+#ifndef OM_ESPNOW_SERVER_CHANNEL
+	#define OM_ESPNOW_SERVER_CHANNEL 3
+#endif
+
 #include <Arduino.h>
 
 enum class EspnowCommand {
@@ -34,7 +38,7 @@ typedef struct struct_status_MacAdress {
 
 typedef struct struct_status_BbsFired {
   	const EspnowStatus status = EspnowStatus::BBS_FIRED;
-	long bbsFired;
+	unsigned long bbsFired;
 } struct_status_BbsFired;
 
 typedef struct struct_status_BatteryVoltage {
@@ -50,19 +54,46 @@ typedef struct struct_status_SelectorState {
 #ifdef OM_ESP_NOW_CLIENT
 	class OpenMosfetEspNowClient
 	{
+		private:
+			static bool isPaired;
 		public:
-			static uint8_t openMosfetMacAddress[6];
+			static uint8_t serverMacAddress[6];
 			static void begin();
+			static void enablePairing();
 			static void handleMessage(uint8_t* mac, uint8_t *incomingData, uint8_t len);
 	};
 #endif
 #ifdef OM_ESP_NOW_SERVER
-	class OpenMosfetEspNowServer
+
+#endif
+#ifdef OM_ESP_NOW_SERVER_ASYNC
+	// #include <WifiEspNow.h>
+	#include <esp_now.h>
+	#ifndef OM_ESPNOW_SERVER_NBSLAVES_MAX
+		#define OM_ESPNOW_SERVER_NBSLAVES_MAX 20
+	#endif
+
+	class OpenMosfetEspNowAsyncServer
 	{
+		private:
+			static esp_now_peer_info_t slaves[OM_ESPNOW_SERVER_NBSLAVES_MAX];
+			static uint8_t slaveCnt;
+			static struct_status_BbsFired tmp_bbsFired_s;
+			static struct_status_BatteryVoltage tmp_batteryVoltage_s;
+			static struct_status_SelectorState tmp_selectorState_s;
+			static void asyncSendBbsFired(void *);
+			static void asyncSendBatteryVoltage(void *);
+			static void asyncSendSelectorState(void *);
+			static void sendData(uint8_t* data, size_t len);
 		public:
-			static uint8_t *cliensMacAddresses[6];
 			static void begin();
+			static void autoAddPeers();
+			// static void addPeer(uint8_t peer[6]);
+			// static void removePeer(uint8_t peer[6]);
 			static void handleMessage(uint8_t* mac, uint8_t *incomingData, uint8_t len);
+			static void sendBbsFired(unsigned long bbsFired);
+			static void sendBatteryVoltage(float batteryVoltage);
+			static void sendSelectorState(uint8_t selectorState);
 	};
 #endif
 
