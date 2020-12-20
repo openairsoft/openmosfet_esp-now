@@ -47,12 +47,23 @@ typedef struct struct_status_SelectorState {
 	uint8_t selectorState;
 } struct_status_SelectorState;
 
-class OpenMosfetEspNowClient
-{
-	public:
-		static uint8_t openMosfetMacAddress[6];
-		static void begin();
-		static void handleMessage(uint8_t* mac, uint8_t *incomingData, uint8_t len);
-};
+#ifdef OM_ESP_NOW_CLIENT
+	class OpenMosfetEspNowClient
+	{
+		public:
+			static uint8_t openMosfetMacAddress[6];
+			static void begin();
+			static void handleMessage(uint8_t* mac, uint8_t *incomingData, uint8_t len);
+	};
+#endif
+#ifdef OM_ESP_NOW_SERVER
+	class OpenMosfetEspNowServer
+	{
+		public:
+			static uint8_t *cliensMacAddresses[6];
+			static void begin();
+			static void handleMessage(uint8_t* mac, uint8_t *incomingData, uint8_t len);
+	};
+#endif
 
 #endif
