@@ -1,10 +1,10 @@
 #if !defined(OM_ESP_NOW_CLIENT) && !defined(OM_ESP_NOW_SERVER)
-  #define OM_ESP_NOW_CLIENT
+  #ifndef OM_ESP_NOW_CLIENT
+    #define OM_ESP_NOW_CLIENT
+  #endif
 #endif
 
-#ifndef OM_ESP_NOW_CLIENT
-  #ifdef OM_ESP_NOW_CLIENT
-#endif
+#ifdef OM_ESP_NOW_CLIENT
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>

@@ -1,13 +1,17 @@
 #if !defined(OM_ESP_NOW_CLIENT) && !defined(OM_ESP_NOW_SERVER)
-  #define OM_ESP_NOW_SERVER
+  #ifndef OM_ESP_NOW_SERVER
+    #define OM_ESP_NOW_SERVER
+  #endif
 #endif
 
-#ifndef OM_ESP_NOW_SERVER
-  #ifdef OM_ESP_NOW_SERVER
-#endif
-
+#ifdef OM_ESP_NOW_SERVER
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
+
+#if defined(ESP8266)
+  #include <ESP8266WiFi.h>
+#elif defined(ESP32)
+  #include <WiFi.h>
+#endif
 
 #include <openMosfetEspNow.h>
 
