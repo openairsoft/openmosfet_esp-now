@@ -63,11 +63,21 @@ typedef struct struct_status_selectorState {
 			static void (*bbsFiredCallBack)(unsigned long);
 			static void (*batteryVoltageCallBack)(float);
 			static void (*selectorStateCallBack)(uint8_t);
+			static unsigned long currentBbsFired;
+			static float currentBatteryVoltage;
+			static uint8_t currentSelectorState;
 		public:
 			static uint8_t serverMacAddress[6];
+			/**
+			 * You can set callbacks to NULL if you don't want to use them
+			 */
 			static void begin(void (*bbsFiredCallBack)(unsigned long), void (*batteryVoltageCallBack)(float), void (*selectorStateCallBack)(uint8_t));
 			static void enablePairing();
 			static void handleMessage(uint8_t* mac, uint8_t *incomingData, uint8_t len);
+			static unsigned long getCurrentBbsFired();
+			static float getCurrentBatteryVoltage();
+			static uint8_t getCurrentSelectorState();
+
 	};
 #endif
 #ifdef OM_ESP_NOW_SERVER

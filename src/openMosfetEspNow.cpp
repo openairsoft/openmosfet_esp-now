@@ -11,10 +11,13 @@
   		#include <WiFi.h>
 	#endif
 	
+	bool OpenMosfetEspNowClient::isPaired = false;
 	void (*OpenMosfetEspNowClient::bbsFiredCallBack)(unsigned long) = NULL;
 	void (*OpenMosfetEspNowClient::batteryVoltageCallBack)(float) = NULL;
 	void (*OpenMosfetEspNowClient::selectorStateCallBack)(uint8_t) = NULL;
-	bool OpenMosfetEspNowClient::isPaired = false;
+	unsigned long OpenMosfetEspNowClient::currentBbsFired = 0;
+	float OpenMosfetEspNowClient::currentBatteryVoltage = 0;
+	uint8_t OpenMosfetEspNowClient::currentSelectorState = 0;
 	uint8_t OpenMosfetEspNowClient::serverMacAddress[6];
 
 	void OpenMosfetEspNowClient::begin(void (*bbsFiredCallBack)(unsigned long), void (*batteryVoltageCallBack)(float), void (*selectorStateCallBack)(uint8_t)) {
@@ -93,7 +96,10 @@
 
 			case EspnowStatus::BBS_FIRED :
 				{
-					OpenMosfetEspNowClient::bbsFiredCallBack( ((struct_status_bbsFired*) incomingData)->bbsFired );
+					if(OpenMosfetEspNowClient::bbsFiredCallBack) {
+						OpenMosfetEspNowClient::bbsFiredCallBack( ((struct_status_bbsFired*) incomingData)->bbsFired );
+					}
+					OpenMosfetEspNowClient::currentBbsFired = ((struct_status_bbsFired*) incomingData)->bbsFired;
 					#ifdef DEBUG
 						Serial.printf("bbsFired: %lu\n", ((struct_status_bbsFired*) incomingData)->bbsFired);
 					#endif
@@ -102,7 +108,10 @@
 
 			case EspnowStatus::BATTERY_VOLTAGE :
 				{
-					OpenMosfetEspNowClient::batteryVoltageCallBack( ((struct_status_batteryVoltage*) incomingData)->batteryVoltage );
+					if(OpenMosfetEspNowClient::batteryVoltageCallBack) {
+						OpenMosfetEspNowClient::batteryVoltageCallBack( ((struct_status_batteryVoltage*) incomingData)->batteryVoltage );
+					}
+					OpenMosfetEspNowClient::currentBatteryVoltage = ((struct_status_batteryVoltage*) incomingData)->batteryVoltage;
 					#ifdef DEBUG
 						Serial.printf("batteryVoltage: %f\n", ((struct_status_batteryVoltage*) incomingData)->batteryVoltage);
 					#endif
@@ -110,8 +119,11 @@
 			break;
 
 			case EspnowStatus::SELECTOR_STATE :
-				{	
-					OpenMosfetEspNowClient::selectorStateCallBack( ((struct_status_selectorState*) incomingData)->selectorState );
+				{
+					if(OpenMosfetEspNowClient::selectorStateCallBack) {
+						OpenMosfetEspNowClient::selectorStateCallBack( ((struct_status_selectorState*) incomingData)->selectorState );
+					}
+					OpenMosfetEspNowClient::currentSelectorState = ((struct_status_selectorState*) incomingData)->selectorState;
 					#ifdef DEBUG
 						Serial.printf("selectorState: %u\n", ((struct_status_selectorState*) incomingData)->selectorState);
 					#endif
@@ -124,6 +136,22 @@
 			#endif
 		}
 	}
+	
+	unsigned long OpenMosfetEspNowClient::getCurrentBbsFired()
+	{
+		return OpenMosfetEspNowClient::currentBbsFired;
+	}
+
+	float OpenMosfetEspNowClient::getCurrentBatteryVoltage()
+	{
+		return OpenMosfetEspNowClient::currentBatteryVoltage;
+	}
+
+	uint8_t OpenMosfetEspNowClient::getCurrentSelectorState()
+	{
+		return OpenMosfetEspNowClient::currentSelectorState;
+	}
+
 #endif
 
 #ifdef OM_ESP_NOW_SERVER
