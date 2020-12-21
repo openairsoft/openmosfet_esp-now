@@ -232,6 +232,10 @@
 
 	void OpenMosfetEspNowAsyncServer::sendData(uint8_t* data, size_t len)
 	{
+		#ifdef DEBUG
+			Serial.println("OpenMosfetEspNowAsyncServer::sendData");
+		#endif
+
 		for (int i = 0; i < OpenMosfetEspNowAsyncServer::slaveCnt; i++) {
 			const uint8_t *peer_addr = OpenMosfetEspNowAsyncServer::slaves[i].peer_addr;
 
@@ -278,6 +282,10 @@
 
 	void OpenMosfetEspNowAsyncServer::sendBbsFired(unsigned long bbsFired)
  	{
+		#ifdef DEBUG
+			Serial.println("OpenMosfetEspNowAsyncServer::sendBbsFired");
+		#endif
+
 		OpenMosfetEspNowAsyncServer::tmp_bbsFired_s.bbsFired = bbsFired;
 
 		xTaskCreatePinnedToCore(
@@ -292,6 +300,10 @@
 
 	void OpenMosfetEspNowAsyncServer::asyncSendBbsFired(void *)
  	{
+		#ifdef DEBUG
+			Serial.println("OpenMosfetEspNowAsyncServer::asyncSendBbsFired");
+		#endif
+
 		// send to all peers
 		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_bbsFired_s, sizeof(struct_status_BbsFired));
 		// esp_err_t result = esp_now_send(NULL, (uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_bbsFired_s, sizeof(struct_status_BbsFired));
@@ -306,6 +318,10 @@
 	
 	void OpenMosfetEspNowAsyncServer::sendBatteryVoltage(float batteryVoltage)
  	{
+		#ifdef DEBUG
+			Serial.println("OpenMosfetEspNowAsyncServer::sendBatteryVoltage");
+		#endif
+
 		OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s.batteryVoltage = batteryVoltage;
 
 		xTaskCreatePinnedToCore(
@@ -320,6 +336,10 @@
 
 	void OpenMosfetEspNowAsyncServer::asyncSendBatteryVoltage(void *)
  	{
+		#ifdef DEBUG
+			Serial.println("OpenMosfetEspNowAsyncServer::asyncSendBatteryVoltage");
+		#endif
+
 		// send to all peers
 		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s, sizeof(struct_status_BatteryVoltage));
 		// esp_err_t result = esp_now_send(NULL, (uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s, sizeof(struct_status_BatteryVoltage));
@@ -334,6 +354,9 @@
 	
 	void OpenMosfetEspNowAsyncServer::sendSelectorState(uint8_t selectorState)
  	{
+		#ifdef DEBUG
+			Serial.println("OpenMosfetEspNowAsyncServer::sendSelectorState");
+		#endif
 		OpenMosfetEspNowAsyncServer::tmp_selectorState_s.selectorState = selectorState;
 
 		xTaskCreatePinnedToCore(
@@ -348,6 +371,9 @@
 
 	void OpenMosfetEspNowAsyncServer::asyncSendSelectorState(void *)
  	{
+		#ifdef DEBUG
+			Serial.println("OpenMosfetEspNowAsyncServer::asyncSendSelectorState");
+		#endif
 
 		// send to all peers
 		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_selectorState_s, sizeof(struct_status_SelectorState));
