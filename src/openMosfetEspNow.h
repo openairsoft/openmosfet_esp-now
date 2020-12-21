@@ -5,6 +5,10 @@
 	#define OM_ESPNOW_SERVER_CHANNEL 3
 #endif
 
+#ifndef OM_ESPNOW_SERVER_ASYNC_TASK_PRIORITY
+	#define OM_ESPNOW_SERVER_ASYNC_TASK_PRIORITY 0
+#endif
+
 #include <Arduino.h>
 
 enum class EspnowCommand {
