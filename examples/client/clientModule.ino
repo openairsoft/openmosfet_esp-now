@@ -16,9 +16,21 @@
 
 #include <openMosfetEspNow.h>
 
+void displayBbsFired(unsigned long bbsFired){
+  Serial.printf("Bbs fired: %lu\n", bbsFired);
+}
+
+void displayBatteryVoltage(float batteryVoltage){
+  Serial.printf("Battery voltage: %f\n", batteryVoltage);
+}
+
+void displaySelectorState(uint8_t selectorState){
+  Serial.printf("Selector state : %u\n", selectorState);
+}
+
 void setup(){
-  OpenMosfetEspNowClient::begin();
   Serial.begin(115200);
+  OpenMosfetEspNowClient::begin(&displayBbsFired, &displayBatteryVoltage, &displaySelectorState);
 }
  
 void loop(){

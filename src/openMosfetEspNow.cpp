@@ -10,11 +10,20 @@
 		#include <esp_now.h>
   		#include <WiFi.h>
 	#endif
-
+	
+	void (*OpenMosfetEspNowClient::bbsFiredCallBack)(unsigned long) = NULL;
+	void (*OpenMosfetEspNowClient::batteryVoltageCallBack)(float) = NULL;
+	void (*OpenMosfetEspNowClient::selectorStateCallBack)(uint8_t) = NULL;
 	bool OpenMosfetEspNowClient::isPaired = false;
 	uint8_t OpenMosfetEspNowClient::serverMacAddress[6];
 
-	void OpenMosfetEspNowClient::begin() {
+	void OpenMosfetEspNowClient::begin(void (*bbsFiredCallBack)(unsigned long), void (*batteryVoltageCallBack)(float), void (*selectorStateCallBack)(uint8_t)) {
+
+		OpenMosfetEspNowClient::bbsFiredCallBack = bbsFiredCallBack;
+		OpenMosfetEspNowClient::batteryVoltageCallBack = batteryVoltageCallBack;
+		OpenMosfetEspNowClient::selectorStateCallBack = selectorStateCallBack;
+
+
 		WiFi.mode(WIFI_AP);
 
 		if(!OpenMosfetEspNowClient::isPaired) {
@@ -84,30 +93,27 @@
 
 			case EspnowStatus::BBS_FIRED :
 				{
-					struct_status_BbsFired bbsFired_s;
-					memcpy(&bbsFired_s, incomingData, sizeof(struct_status_BbsFired));
+					OpenMosfetEspNowClient::bbsFiredCallBack( ((struct_status_bbsFired*) incomingData)->bbsFired );
 					#ifdef DEBUG
-						Serial.printf("bbsFired: %li\n", bbsFired_s.bbsFired);
+						Serial.printf("bbsFired: %lu\n", ((struct_status_bbsFired*) incomingData)->bbsFired);
 					#endif
 				}
 			break;
 
 			case EspnowStatus::BATTERY_VOLTAGE :
 				{
-					struct_status_BatteryVoltage batteryVoltage_s;
-					memcpy(&batteryVoltage_s, incomingData, sizeof(struct_status_BatteryVoltage));
+					OpenMosfetEspNowClient::batteryVoltageCallBack( ((struct_status_batteryVoltage*) incomingData)->batteryVoltage );
 					#ifdef DEBUG
-						Serial.printf("batteryVoltage: %f\n", batteryVoltage_s.batteryVoltage);
+						Serial.printf("batteryVoltage: %f\n", ((struct_status_batteryVoltage*) incomingData)->batteryVoltage);
 					#endif
 				}
 			break;
 
 			case EspnowStatus::SELECTOR_STATE :
 				{	
-					struct_status_SelectorState selectorState_s;
-					memcpy(&selectorState_s, incomingData, sizeof(struct_status_SelectorState));
+					OpenMosfetEspNowClient::selectorStateCallBack( ((struct_status_selectorState*) incomingData)->selectorState );
 					#ifdef DEBUG
-						Serial.printf("selectorState: %i\n", selectorState_s.selectorState);
+						Serial.printf("selectorState: %u\n", ((struct_status_selectorState*) incomingData)->selectorState);
 					#endif
 				}
 			break;
@@ -130,9 +136,9 @@
 
 	esp_now_peer_info_t OpenMosfetEspNowAsyncServer::slaves[OM_ESPNOW_SERVER_NBSLAVES_MAX] = {};
 	uint8_t OpenMosfetEspNowAsyncServer::slaveCnt = 0;
-	struct_status_BbsFired OpenMosfetEspNowAsyncServer::tmp_bbsFired_s;
-	struct_status_BatteryVoltage OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s;
-	struct_status_SelectorState OpenMosfetEspNowAsyncServer::tmp_selectorState_s;
+	struct_status_bbsFired OpenMosfetEspNowAsyncServer::tmp_bbsFired_s;
+	struct_status_batteryVoltage OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s;
+	struct_status_selectorState OpenMosfetEspNowAsyncServer::tmp_selectorState_s;
 
 	/**
 	 * Wifi must ba enabled before calling this method
@@ -305,8 +311,8 @@
 		#endif
 
 		// send to all peers
-		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_bbsFired_s, sizeof(struct_status_BbsFired));
-		// esp_err_t result = esp_now_send(NULL, (uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_bbsFired_s, sizeof(struct_status_BbsFired));
+		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_bbsFired_s, sizeof(struct_status_bbsFired));
+		// esp_err_t result = esp_now_send(NULL, (uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_bbsFired_s, sizeof(struct_status_bbsFired));
 
 		#ifdef DEBUG
 			Serial.println(uxTaskGetStackHighWaterMark(NULL));
@@ -341,8 +347,8 @@
 		#endif
 
 		// send to all peers
-		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s, sizeof(struct_status_BatteryVoltage));
-		// esp_err_t result = esp_now_send(NULL, (uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s, sizeof(struct_status_BatteryVoltage));
+		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s, sizeof(struct_status_batteryVoltage));
+		// esp_err_t result = esp_now_send(NULL, (uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s, sizeof(struct_status_batteryVoltage));
 
 		#ifdef DEBUG
 			Serial.println(uxTaskGetStackHighWaterMark(NULL));
@@ -376,8 +382,8 @@
 		#endif
 
 		// send to all peers
-		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_selectorState_s, sizeof(struct_status_SelectorState));
-		// esp_err_t result = esp_now_send(NULL, (uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_selectorState_s, sizeof(struct_status_SelectorState));
+		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_selectorState_s, sizeof(struct_status_selectorState));
+		// esp_err_t result = esp_now_send(NULL, (uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_selectorState_s, sizeof(struct_status_selectorState));
 
 		#ifdef DEBUG
 			Serial.println(uxTaskGetStackHighWaterMark(NULL));

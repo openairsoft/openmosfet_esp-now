@@ -40,29 +40,32 @@ typedef struct struct_status_MacAdress {
 	uint8_t macAddress[6];
 } struct_status_MacAdress;
 
-typedef struct struct_status_BbsFired {
+typedef struct struct_status_bbsFired {
   	const EspnowStatus status = EspnowStatus::BBS_FIRED;
 	unsigned long bbsFired;
-} struct_status_BbsFired;
+} struct_status_bbsFired;
 
-typedef struct struct_status_BatteryVoltage {
+typedef struct struct_status_batteryVoltage {
   	const EspnowStatus status = EspnowStatus::BATTERY_VOLTAGE;
 	float batteryVoltage;
-} struct_status_BatteryVoltage;
+} struct_status_batteryVoltage;
 
-typedef struct struct_status_SelectorState {
+typedef struct struct_status_selectorState {
   	const EspnowStatus status = EspnowStatus::SELECTOR_STATE;
 	uint8_t selectorState;
-} struct_status_SelectorState;
+} struct_status_selectorState;
 
 #ifdef OM_ESP_NOW_CLIENT
 	class OpenMosfetEspNowClient
 	{
 		private:
 			static bool isPaired;
+			static void (*bbsFiredCallBack)(unsigned long);
+			static void (*batteryVoltageCallBack)(float);
+			static void (*selectorStateCallBack)(uint8_t);
 		public:
 			static uint8_t serverMacAddress[6];
-			static void begin();
+			static void begin(void (*bbsFiredCallBack)(unsigned long), void (*batteryVoltageCallBack)(float), void (*selectorStateCallBack)(uint8_t));
 			static void enablePairing();
 			static void handleMessage(uint8_t* mac, uint8_t *incomingData, uint8_t len);
 	};
@@ -82,9 +85,9 @@ typedef struct struct_status_SelectorState {
 		private:
 			static esp_now_peer_info_t slaves[OM_ESPNOW_SERVER_NBSLAVES_MAX];
 			static uint8_t slaveCnt;
-			static struct_status_BbsFired tmp_bbsFired_s;
-			static struct_status_BatteryVoltage tmp_batteryVoltage_s;
-			static struct_status_SelectorState tmp_selectorState_s;
+			static struct_status_bbsFired tmp_bbsFired_s;
+			static struct_status_batteryVoltage tmp_batteryVoltage_s;
+			static struct_status_selectorState tmp_selectorState_s;
 			static void asyncSendBbsFired(void *);
 			static void asyncSendBatteryVoltage(void *);
 			static void asyncSendSelectorState(void *);
