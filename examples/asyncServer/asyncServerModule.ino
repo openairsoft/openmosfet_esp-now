@@ -37,6 +37,8 @@ void loop(){
 
 
   Serial.println("----------multi-core-----------");
+  Serial.print("running on core: ");
+  Serial.println(xPortGetCoreID());
   beforeSend = micros();
   OpenMosfetEspNowAsyncServer::sendBbsFired(4);
   OpenMosfetEspNowAsyncServer::sendBatteryVoltage(12.2);

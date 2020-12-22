@@ -90,44 +90,44 @@
 					if(!OpenMosfetEspNowClient::isPaired){
 						memcpy(OpenMosfetEspNowClient::serverMacAddress, macAddress_s.macAddress, sizeof(uint8_t[6]));
 						OpenMosfetEspNowClient::isPaired = true;
+						#ifdef DEBUG
+							Serial.println("Paired !");
+						#endif
 					}
 				}
 			break;
 
 			case EspnowStatus::BBS_FIRED :
-				{
-					if(OpenMosfetEspNowClient::bbsFiredCallBack) {
-						OpenMosfetEspNowClient::bbsFiredCallBack( ((struct_status_bbsFired*) incomingData)->bbsFired );
-					}
-					OpenMosfetEspNowClient::currentBbsFired = ((struct_status_bbsFired*) incomingData)->bbsFired;
-					#ifdef DEBUG
-						Serial.printf("bbsFired: %lu\n", ((struct_status_bbsFired*) incomingData)->bbsFired);
-					#endif
+				
+				#ifdef DEBUG
+					Serial.printf("bbsFired: %lu\n", ((struct_status_bbsFired*) incomingData)->bbsFired);
+				#endif
+				if(OpenMosfetEspNowClient::bbsFiredCallBack) {
+					OpenMosfetEspNowClient::bbsFiredCallBack( ((struct_status_bbsFired*) incomingData)->bbsFired );
 				}
+				OpenMosfetEspNowClient::currentBbsFired = ((struct_status_bbsFired*) incomingData)->bbsFired;
+				
 			break;
 
 			case EspnowStatus::BATTERY_VOLTAGE :
-				{
-					if(OpenMosfetEspNowClient::batteryVoltageCallBack) {
-						OpenMosfetEspNowClient::batteryVoltageCallBack( ((struct_status_batteryVoltage*) incomingData)->batteryVoltage );
-					}
-					OpenMosfetEspNowClient::currentBatteryVoltage = ((struct_status_batteryVoltage*) incomingData)->batteryVoltage;
-					#ifdef DEBUG
-						Serial.printf("batteryVoltage: %f\n", ((struct_status_batteryVoltage*) incomingData)->batteryVoltage);
-					#endif
+				#ifdef DEBUG
+					Serial.printf("batteryVoltage: %f\n", ((struct_status_batteryVoltage*) incomingData)->batteryVoltage);
+				#endif
+				if(OpenMosfetEspNowClient::batteryVoltageCallBack) {
+					OpenMosfetEspNowClient::batteryVoltageCallBack( ((struct_status_batteryVoltage*) incomingData)->batteryVoltage );
 				}
+				OpenMosfetEspNowClient::currentBatteryVoltage = ((struct_status_batteryVoltage*) incomingData)->batteryVoltage;
 			break;
 
 			case EspnowStatus::SELECTOR_STATE :
-				{
-					if(OpenMosfetEspNowClient::selectorStateCallBack) {
-						OpenMosfetEspNowClient::selectorStateCallBack( ((struct_status_selectorState*) incomingData)->selectorState );
-					}
-					OpenMosfetEspNowClient::currentSelectorState = ((struct_status_selectorState*) incomingData)->selectorState;
-					#ifdef DEBUG
-						Serial.printf("selectorState: %u\n", ((struct_status_selectorState*) incomingData)->selectorState);
-					#endif
+				#ifdef DEBUG
+					Serial.printf("selectorState: %u\n", ((struct_status_selectorState*) incomingData)->selectorState);
+				#endif
+				if(OpenMosfetEspNowClient::selectorStateCallBack) {
+					OpenMosfetEspNowClient::selectorStateCallBack( ((struct_status_selectorState*) incomingData)->selectorState );
 				}
+				OpenMosfetEspNowClient::currentSelectorState = ((struct_status_selectorState*) incomingData)->selectorState;
+				
 			break;
 			#ifdef DEBUG
 				default :
@@ -164,6 +164,10 @@
 
 	esp_now_peer_info_t OpenMosfetEspNowAsyncServer::slaves[OM_ESPNOW_SERVER_NBSLAVES_MAX] = {};
 	uint8_t OpenMosfetEspNowAsyncServer::slaveCnt = 0;
+	SemaphoreHandle_t OpenMosfetEspNowAsyncServer::asyncCallsMutex;
+	TaskHandle_t OpenMosfetEspNowAsyncServer::asyncSendBbsFiredHandle;
+	TaskHandle_t OpenMosfetEspNowAsyncServer::asyncSendBatteryVoltageHandle;
+	TaskHandle_t OpenMosfetEspNowAsyncServer::asyncSendSelectorStateHandle;
 	struct_status_bbsFired OpenMosfetEspNowAsyncServer::tmp_bbsFired_s;
 	struct_status_batteryVoltage OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s;
 	struct_status_selectorState OpenMosfetEspNowAsyncServer::tmp_selectorState_s;
@@ -178,7 +182,41 @@
 				Serial.println("ESP-NOW initialization failed");
 			#endif
 		}
+
+		OpenMosfetEspNowAsyncServer::asyncCallsMutex = xSemaphoreCreateMutex();
+
+		// creates tasks and handlers for async calls
+		xTaskCreatePinnedToCore(
+			OpenMosfetEspNowAsyncServer::asyncSendBbsFired, /* Function to implement the task */
+			"asyncSendBbsFired", /* Name of the task */
+			5000,  /* Stack size in words */
+			NULL,  /* Task input parameter */
+			OM_ESPNOW_SERVER_ASYNC_TASK_PRIORITY,  /* Priority of the task */
+			&OpenMosfetEspNowAsyncServer::asyncSendBbsFiredHandle,  /* Task handle. */
+			0
+		); /* Core where the task should run */
+
+		xTaskCreatePinnedToCore(
+			OpenMosfetEspNowAsyncServer::asyncSendBatteryVoltage, /* Function to implement the task */
+			"asyncSendBatteryVoltage", /* Name of the task */
+			5000,  /* Stack size in words */
+			NULL,  /* Task input parameter */
+			OM_ESPNOW_SERVER_ASYNC_TASK_PRIORITY,  /* Priority of the task */
+			&OpenMosfetEspNowAsyncServer::asyncSendBatteryVoltageHandle,  /* Task handle. */
+			0
+		); /* Core where the task should run */
+
+		xTaskCreatePinnedToCore(
+			OpenMosfetEspNowAsyncServer::asyncSendSelectorState, /* Function to implement the task */
+			"asyncSendSelectorState", /* Name of the task */
+			5000,  /* Stack size in words */
+			NULL,  /* Task input parameter */
+			OM_ESPNOW_SERVER_ASYNC_TASK_PRIORITY,  /* Priority of the task */
+			&OpenMosfetEspNowAsyncServer::asyncSendSelectorStateHandle,  /* Task handle. */
+			0
+		); /* Core where the task should run */
 	}
+		
 
 	//from https://github.com/espressif/arduino-esp32/blob/master/libraries/ESP32/examples/ESPNow/Multi-Slave/Master/Master.ino
 	void OpenMosfetEspNowAsyncServer::autoAddPeers()
@@ -205,7 +243,7 @@
 			#ifdef DEBUG
 				Serial.print(i + 1); Serial.print(": "); Serial.print(SSID); Serial.print(" ["); Serial.print(BSSIDstr); Serial.print("]"); Serial.print(" ("); Serial.print(RSSI); Serial.print(")"); Serial.println("");
 			#endif
-			delay(10);
+			// delay(10);
 			// Check if the current device starts with `Slave`
 			if (SSID.indexOf("Slave") == 0) {
 				// SSID of interest
@@ -254,7 +292,7 @@
 						} else {
 							Serial.println("Pair failed");
 						}
-						delay(100);// todo: check id this is needed
+						// delay(100);// todo: check id this is needed
 					#endif
 				}
 			}
@@ -321,32 +359,27 @@
 		#endif
 
 		OpenMosfetEspNowAsyncServer::tmp_bbsFired_s.bbsFired = bbsFired;
-
-		xTaskCreatePinnedToCore(
-		OpenMosfetEspNowAsyncServer::asyncSendBbsFired, /* Function to implement the task */
-		"asyncSendBbsFired", /* Name of the task */
-		10000,  /* Stack size in words */
-		NULL,  /* Task input parameter */
-		OM_ESPNOW_SERVER_ASYNC_TASK_PRIORITY,  /* Priority of the task */
-		NULL,  /* Task handle. */
-		1); /* Core where the task should run */
+		vTaskResume(OpenMosfetEspNowAsyncServer::asyncSendBbsFiredHandle);
 	}
 
 	void OpenMosfetEspNowAsyncServer::asyncSendBbsFired(void *)
  	{
-		#ifdef DEBUG
-			Serial.println("OpenMosfetEspNowAsyncServer::asyncSendBbsFired");
-		#endif
+		while(true)
+		{
+			vTaskSuspend(NULL);
+			#ifdef DEBUG
+				Serial.println("OpenMosfetEspNowAsyncServer::asyncSendBbsFired");
+			#endif
 
-		// send to all peers
-		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_bbsFired_s, sizeof(struct_status_bbsFired));
-		// esp_err_t result = esp_now_send(NULL, (uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_bbsFired_s, sizeof(struct_status_bbsFired));
+			// send to all peers
+			xSemaphoreTake(OpenMosfetEspNowAsyncServer::asyncCallsMutex, portMAX_DELAY);
+			OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_bbsFired_s, sizeof(struct_status_bbsFired));
+			xSemaphoreGive(OpenMosfetEspNowAsyncServer::asyncCallsMutex);
 
-		#ifdef DEBUG
-			Serial.println(uxTaskGetStackHighWaterMark(NULL));
-		#endif
-
-		vTaskDelete(NULL);
+			#ifdef DEBUG
+				Serial.println(uxTaskGetStackHighWaterMark(NULL));
+			#endif
+		}
 	}
 
 	
@@ -357,32 +390,27 @@
 		#endif
 
 		OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s.batteryVoltage = batteryVoltage;
-
-		xTaskCreatePinnedToCore(
-		OpenMosfetEspNowAsyncServer::asyncSendBatteryVoltage, /* Function to implement the task */
-		"asyncSendBatteryVoltage", /* Name of the task */
-		10000,  /* Stack size in words */
-		NULL,  /* Task input parameter */
-		OM_ESPNOW_SERVER_ASYNC_TASK_PRIORITY,  /* Priority of the task */
-		NULL,  /* Task handle. */
-		1); /* Core where the task should run */
+		vTaskResume(OpenMosfetEspNowAsyncServer::asyncSendBatteryVoltageHandle);
 	}
 
 	void OpenMosfetEspNowAsyncServer::asyncSendBatteryVoltage(void *)
  	{
-		#ifdef DEBUG
-			Serial.println("OpenMosfetEspNowAsyncServer::asyncSendBatteryVoltage");
-		#endif
+		while(true)
+		{
+			vTaskSuspend(NULL);
+			#ifdef DEBUG
+				Serial.println("OpenMosfetEspNowAsyncServer::asyncSendBatteryVoltage");
+			#endif
 
-		// send to all peers
-		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s, sizeof(struct_status_batteryVoltage));
-		// esp_err_t result = esp_now_send(NULL, (uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s, sizeof(struct_status_batteryVoltage));
-
-		#ifdef DEBUG
-			Serial.println(uxTaskGetStackHighWaterMark(NULL));
-		#endif
-
-		vTaskDelete(NULL);
+			// send to all peers
+			xSemaphoreTake(OpenMosfetEspNowAsyncServer::asyncCallsMutex, portMAX_DELAY);
+			OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_batteryVoltage_s, sizeof(struct_status_batteryVoltage));
+			xSemaphoreGive(OpenMosfetEspNowAsyncServer::asyncCallsMutex);
+			
+			#ifdef DEBUG
+				Serial.println(uxTaskGetStackHighWaterMark(NULL));
+			#endif
+		}
 	}
 
 	
@@ -392,31 +420,26 @@
 			Serial.println("OpenMosfetEspNowAsyncServer::sendSelectorState");
 		#endif
 		OpenMosfetEspNowAsyncServer::tmp_selectorState_s.selectorState = selectorState;
-
-		xTaskCreatePinnedToCore(
-		OpenMosfetEspNowAsyncServer::asyncSendSelectorState, /* Function to implement the task */
-		"asyncSendSelectorState", /* Name of the task */
-		10000,  /* Stack size in words */
-		NULL,  /* Task input parameter */
-		OM_ESPNOW_SERVER_ASYNC_TASK_PRIORITY,  /* Priority of the task */
-		NULL,  /* Task handle. */
-		1); /* Core where the task should run */
+		vTaskResume(OpenMosfetEspNowAsyncServer::asyncSendSelectorStateHandle);
 	}
 
 	void OpenMosfetEspNowAsyncServer::asyncSendSelectorState(void *)
  	{
-		#ifdef DEBUG
-			Serial.println("OpenMosfetEspNowAsyncServer::asyncSendSelectorState");
-		#endif
+		while(true)
+		{
+			vTaskSuspend(NULL);
+			#ifdef DEBUG
+				Serial.println("OpenMosfetEspNowAsyncServer::asyncSendSelectorState");
+			#endif
 
-		// send to all peers
-		OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_selectorState_s, sizeof(struct_status_selectorState));
-		// esp_err_t result = esp_now_send(NULL, (uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_selectorState_s, sizeof(struct_status_selectorState));
+			// send to all peers
+			xSemaphoreTake(OpenMosfetEspNowAsyncServer::asyncCallsMutex, portMAX_DELAY);
+			OpenMosfetEspNowAsyncServer::sendData((uint8_t *) &OpenMosfetEspNowAsyncServer::tmp_selectorState_s, sizeof(struct_status_selectorState));
+			xSemaphoreGive(OpenMosfetEspNowAsyncServer::asyncCallsMutex);
 
-		#ifdef DEBUG
-			Serial.println(uxTaskGetStackHighWaterMark(NULL));
-		#endif
-
-		vTaskDelete(NULL);
+			#ifdef DEBUG
+				Serial.println(uxTaskGetStackHighWaterMark(NULL));
+			#endif
+		}
 	}
 #endif

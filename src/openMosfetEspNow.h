@@ -98,6 +98,10 @@ typedef struct struct_status_selectorState {
 			static struct_status_bbsFired tmp_bbsFired_s;
 			static struct_status_batteryVoltage tmp_batteryVoltage_s;
 			static struct_status_selectorState tmp_selectorState_s;
+			static SemaphoreHandle_t asyncCallsMutex;
+			static TaskHandle_t asyncSendBbsFiredHandle;
+			static TaskHandle_t asyncSendBatteryVoltageHandle;
+			static TaskHandle_t asyncSendSelectorStateHandle;
 			static void asyncSendBbsFired(void *);
 			static void asyncSendBatteryVoltage(void *);
 			static void asyncSendSelectorState(void *);
