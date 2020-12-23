@@ -40,8 +40,11 @@ void loop(){
   Serial.print("running on core: ");
   Serial.println(xPortGetCoreID());
   beforeSend = micros();
+  delay(100);
   OpenMosfetEspNowAsyncServer::sendBbsFired(4);
+  delay(100);
   OpenMosfetEspNowAsyncServer::sendBatteryVoltage(12.2);
+  delay(100);
   OpenMosfetEspNowAsyncServer::sendSelectorState(1);
   afterSend = micros();
   Serial.printf("delta : %lu\n", afterSend - beforeSend);

@@ -98,37 +98,51 @@
 			break;
 
 			case EspnowStatus::BBS_FIRED :
-				
-				#ifdef DEBUG
-					Serial.printf("bbsFired: %lu\n", ((struct_status_bbsFired*) incomingData)->bbsFired);
-				#endif
-				if(OpenMosfetEspNowClient::bbsFiredCallBack) {
-					OpenMosfetEspNowClient::bbsFiredCallBack( ((struct_status_bbsFired*) incomingData)->bbsFired );
+				{
+					struct_status_bbsFired bbsFired_s;
+					memcpy(&bbsFired_s, incomingData, sizeof(struct_status_bbsFired));
+
+					#ifdef DEBUG
+						Serial.printf("bbsFired: %lu\n", bbsFired_s.bbsFired);
+					#endif
+					if(OpenMosfetEspNowClient::bbsFiredCallBack) {
+						OpenMosfetEspNowClient::bbsFiredCallBack( bbsFired_s.bbsFired );
+					}
+					OpenMosfetEspNowClient::currentBbsFired = bbsFired_s.bbsFired;
+
 				}
-				OpenMosfetEspNowClient::currentBbsFired = ((struct_status_bbsFired*) incomingData)->bbsFired;
-				
 			break;
 
 			case EspnowStatus::BATTERY_VOLTAGE :
-				#ifdef DEBUG
-					Serial.printf("batteryVoltage: %f\n", ((struct_status_batteryVoltage*) incomingData)->batteryVoltage);
-				#endif
-				if(OpenMosfetEspNowClient::batteryVoltageCallBack) {
-					OpenMosfetEspNowClient::batteryVoltageCallBack( ((struct_status_batteryVoltage*) incomingData)->batteryVoltage );
+				{
+					struct_status_batteryVoltage batteryVoltage_s;
+					memcpy(&batteryVoltage_s, incomingData, sizeof(struct_status_batteryVoltage));
+
+					#ifdef DEBUG
+						Serial.printf("batteryVoltage: %f\n", batteryVoltage_s.batteryVoltage);
+					#endif
+					if(OpenMosfetEspNowClient::batteryVoltageCallBack) {
+						OpenMosfetEspNowClient::batteryVoltageCallBack( batteryVoltage_s.batteryVoltage );
+					}
+					OpenMosfetEspNowClient::currentBatteryVoltage = batteryVoltage_s.batteryVoltage;
 				}
-				OpenMosfetEspNowClient::currentBatteryVoltage = ((struct_status_batteryVoltage*) incomingData)->batteryVoltage;
 			break;
 
 			case EspnowStatus::SELECTOR_STATE :
-				#ifdef DEBUG
-					Serial.printf("selectorState: %u\n", ((struct_status_selectorState*) incomingData)->selectorState);
-				#endif
-				if(OpenMosfetEspNowClient::selectorStateCallBack) {
-					OpenMosfetEspNowClient::selectorStateCallBack( ((struct_status_selectorState*) incomingData)->selectorState );
+				{
+					struct_status_selectorState selectorState_s;
+					memcpy(&selectorState_s, incomingData, sizeof(struct_status_selectorState));
+
+					#ifdef DEBUG
+						Serial.printf("selectorState: %u\n", selectorState_s.selectorState);
+					#endif
+					if(OpenMosfetEspNowClient::selectorStateCallBack) {
+						OpenMosfetEspNowClient::selectorStateCallBack( selectorState_s.selectorState );
+					}
+					OpenMosfetEspNowClient::currentSelectorState = selectorState_s.selectorState;
 				}
-				OpenMosfetEspNowClient::currentSelectorState = ((struct_status_selectorState*) incomingData)->selectorState;
-				
 			break;
+
 			#ifdef DEBUG
 				default :
 						Serial.printf("unknown code: %i\n", incomingStatus);
